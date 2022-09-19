@@ -1,0 +1,31 @@
+{
+  "name": "pv-auth",
+  "version": "0.0.1",
+  "description": "prodvest的auth模块。",
+  "main": "index.js",
+  "scripts": {
+    "test": "tap test/**/*.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.wware.org/pub/pvauth.git"
+  },
+  "keywords": [
+    "soa"
+  ],
+  "author": "lizhutang",
+  "license": "MIT",
+  "dependencies": {
+    "fastify-plugin": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^18.7.13",
+    "@typescript-eslint/eslint-plugin": "^5.35.1",
+    "@typescript-eslint/parser": "^5.35.1",
+    "eslint": "^8.0.1",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.25.2",
+    "eslint-plugin-n": "^15.0.0",
+    "eslint-plugin-promise": "^6.0.0"
+  }
+}
