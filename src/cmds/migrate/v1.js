@@ -48,12 +48,24 @@ module.exports = function (fastify, opts) {
           table.string('idcard', 64).unique().nullable()
           // 身份证号已验证(身份证验证)
           table.boolean('idcardVerified').defaultTo(false)
+          // 是否激活
+          table.boolean('inactive').defaultTo(false)
+          // 创建日期。
+          table.timestamp('created').notNullable().defaultTo(knex.fn.now())
+          // 创建人
+          table.uuid('createdBy').nullable()
           // avatar(URL)
           table.text('avatar').nullable()
+          // 用户备注
+          table.text('note').nullable()
+          // 逗号分割的下一动作序列。
+          table.string('action', 255).nullable()
           // 所属角色,采用数字数组。
           table.specificType('role', 'integer ARRAY').nullable()
           // 所属组数组,采用数字数组。
           table.specificType('group', 'integer ARRAY').nullable()
+
+          table.foreign('createdBy').references(`${USER}.id`)
         })
     },
     async down (knex) {

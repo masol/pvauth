@@ -13,21 +13,20 @@ const fp = require('fastify-plugin')
 const path = require('path')
 
 module.exports = fp(async function (fastify, opts = {}) {
-  const { soa, _, $, log } = fastify
+  const { soa, _, config } = fastify
+  const cfgutil = config.util
   await soa.get('knex')
-  const ojs = await soa.get('objection')
-  const files = await $.glob(`${path.join(__dirname, 'src', 'models')}/**/*.js`)
-  for (let i = 0; i < files.length; i++) {
-    // console.log(`file ${i} = ${files[i]}`)
-    try {
-      const m = require(files[i])
-      await m.setup(fastify, ojs)
-    } catch (e) {
-      log.error("加载Schema'%s'时发生错误:%s", files[i], e)
-    }
-  }
+  await soa.model(path.join(__dirname, 'src', 'helper', 'models'))
   if (_.isObject(fastify.runcmd)) { // runcmd mode.
     return await require('./src/cmds').run(fastify, opts)
+  } else {
+    const passport = await soa.get('passport')
+    const cfg = cfgutil.has('passport.conf') ? cfgutil.get('passport.conf') : {}
+    // 注册local验证。
+    await require('./src/plugins/local')(fastify, passport, cfg.local || {})
+    await soa.schema(path.join(__dirname, 'src', 'helper', 'schemas'))
+    // @TODO: 如果是dev模式，注册静态地址。
+    await soa.route(path.join(__dirname, 'src', 'routes'))
   }
   fastify.log.debug('auth opts=', opts)
 }, { fastify: '4.x' })

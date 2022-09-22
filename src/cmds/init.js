@@ -25,7 +25,7 @@ module.exports.run = async function (fastify, opts = {}) {
   // console.log('Users=', Users)
   const admin = await Users.query()
     .select('id')
-    .where('accountName', '=', 'admin')
+    .where('accountName', 'admin')
   // console.log('admin=', admin)
   if (admin.length === 1) {
     log.warn('用户admin已经存在，请使用passwd指令来修正密码')
