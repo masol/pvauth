@@ -44,10 +44,10 @@ module.exports = async function (fastify, passport, conf) {
         }
       }
     }
-    console.log('local login=', username, passport)
+    // console.log('local login=', username, passport)
     // const row = { username: 'test', role: ['a', 'b', 'c'] }
     done(null, row)
-    console.log('after cb!!row=', row)
+    // console.log('after cb!!row=', row)
   }))
   //
 }

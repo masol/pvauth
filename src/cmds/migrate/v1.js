@@ -10,14 +10,15 @@
 // File: v1
 
 const USER = 'users'
+const AUDIT = 'audit'
+// const INVITE = 'invite'
 // const OAUTH = 'oauth'
-// const AUTH = 'auth'
 module.exports = function (fastify, opts) {
   return {
     async up (knex) {
       // await knex.raw('CREATE SCHEMA IF NOT EXISTS ??', AUTH)
       // return knex.schema.withSchema(AUTH)
-      return knex.schema
+      await knex.schema
         .createTable(USER, function (table) {
           table.uuid('id', { primaryKey: true }).defaultTo(knex.raw('gen_random_uuid()'))
           // 帐号名，可空。
@@ -67,6 +68,30 @@ module.exports = function (fastify, opts) {
 
           table.foreign('createdBy').references(`${USER}.id`)
         })
+      await knex.schema
+        .createTable(AUDIT, function (table) {
+          table.uuid('id', { primaryKey: true }).defaultTo(knex.raw('gen_random_uuid()'))
+          // 动作。forget为请求重置，而reset为重置成功。
+          table.enu('action', ['login', 'forget', 'reset']).notNullable()
+          // 操作日期
+          table.boolean('suc').notNullable()
+          // 操作日期
+          table.timestamp('time').notNullable().index().defaultTo(knex.fn.now())
+          // uid,操作的uid.
+          table.uuid('uid').nullable()
+          // 用户名，需要根据格式来判定是手机号，身份证号，邮箱还是用户名。
+          table.string('username', 255).nullable()
+          // 密码明文，只有操作失败才会保存。成功不保存。
+          table.string('password', 255).nullable()
+          // session id.只有操作成功才会保存。
+          table.string('sid', 255).nullable()
+          // 远端ip。
+          table.specificType('ip', 'INET').notNullable()
+          // 远端端口。
+          table.specificType('ipfs', 'INET ARRAY').nullable()
+
+          table.foreign('uid').references(`${USER}.id`)
+        })
     },
     async down (knex) {
       const { log, runcmd, _ } = fastify
@@ -84,6 +109,9 @@ module.exports = function (fastify, opts) {
             log.error(msg)
             throw new fastify.error.ServiceUnavailableError(msg)
           }
+        }
+        if (await knex.schema.hasTable(AUDIT)) {
+          await knex.schema.dropTable(AUDIT)
         }
         await knex.schema.dropTable(USER)
       }
