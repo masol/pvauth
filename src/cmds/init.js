@@ -44,7 +44,8 @@ module.exports.run = async function (fastify, opts = {}) {
 
   const result = await Users.query().insert({
     accountName: 'admin',
-    password: crypto.createHash('md5').update(passwd).digest('hex')
+    password: crypto.createHash('md5').update(passwd).digest('hex'),
+    active: true
   })
   // console.log('result=', result)
   return result

@@ -15,6 +15,9 @@ module.exports = async function (fastify, opts) {
   const { soa, error, config, util, _ } = fastify
   const cfgutil = config.util
   const passport = await soa.get('passport')
+  const auditCfg = cfgutil.dget('passport.audit', {})
+
+  const loginDev = parseInt(cfgutil.dget('passport.strategies.local.loginDev', '1'))
   fastify.post('/v1/auth/login',
     {
       schema: {
@@ -24,19 +27,39 @@ module.exports = async function (fastify, opts) {
       }
     },
     async function (request, reply) {
-      // console.log('before handler', request.body)
       if (request.isAuthenticated()) {
         throw new error.PreconditionRequiredError('Already logined')
       }
       //, { successRedirect: '/' , failureRedirect: '/login'}
       const Handler = await passport.authenticate('local')
       await Handler(request, reply)
-      const auditCfg = cfgutil.has('passport.audit') ? cfgutil.get('passport.audit') : {}
       if (!auditCfg.disabled) {
-        // 添加审计信息。
         const ojs = await soa.get('objection')
         const Audit = ojs.Model.store.audit
         const ipfs = _.drop(util.forwarded(request))
+        // 处理loginDev,从审计表中获取uid并且sid不空，销毁sid并且设置退出状态。
+        if (loginDev > 0 && request.isAuthenticated()) {
+          const rmCount = await Audit.rmLogin({
+            id: request.user.id,
+            loginDev,
+            sessionStore: request.sessionStore
+          })
+          if (rmCount > 0) {
+            const auditJSON = {
+              action: 'logout',
+              suc: true,
+              uid: request.user.id,
+              username: request.user.name,
+              ip: request.ip,
+              ipfs,
+              sid: `${rmCount}::uid::${request.user.id}`
+            }
+            await Audit.query().insert(auditJSON)
+          }
+          // const Sess = await soa.get('session')
+          // console.log('request.session.store=', Sess)
+        }
+        // 添加审计信息。
         const auditJSON = {
           action: 'login',
           suc: false,
@@ -44,7 +67,7 @@ module.exports = async function (fastify, opts) {
           ip: request.ip,
           ipfs
         }
-        console.log('request.session=', request.session)
+        // console.log('request.session=', request.session)
         if (request.isAuthenticated()) {
           auditJSON.suc = true
           auditJSON.uid = request.user.id
@@ -79,7 +102,22 @@ module.exports = async function (fastify, opts) {
       if (!request.isAuthenticated()) {
         throw new error.PreconditionRequiredError('not logined')
       }
+      const sid = request.session.sessionId
+      const name = request.user.name
+      const uid = request.user.id
+
       await request.logout()
+      if (!auditCfg.disabled) {
+        const ojs = await soa.get('objection')
+        const Audit = ojs.Model.store.audit
+        const ipfs = _.drop(util.forwarded(request))
+        await Audit.logout(sid, {
+          uid,
+          username: name,
+          ip: request.ip,
+          ipfs
+        })
+      }
       return {
         ok: true
       }

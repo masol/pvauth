@@ -25,6 +25,10 @@ module.exports = function (fastify, opts) {
           table.string('accountName', 128).unique().nullable()
           // 密码md5。
           table.string('password', 128).nullable()
+          // ota密码。
+          table.string('ota', 128).nullable()
+          // ota失效时间。
+          table.string('otaExpire', 128).nullable()
           // 昵称
           table.string('nickName', 128).nullable()
           // 显示用真实名
@@ -49,8 +53,8 @@ module.exports = function (fastify, opts) {
           table.string('idcard', 64).unique().nullable()
           // 身份证号已验证(身份证验证)
           table.boolean('idcardVerified').defaultTo(false)
-          // 是否激活
-          table.boolean('inactive').defaultTo(false)
+          // 是否激活,多重验证中间状态，处于非激活状态。
+          table.boolean('active').defaultTo(false)
           // 创建日期。
           table.timestamp('created').notNullable().defaultTo(knex.fn.now())
           // 创建人
@@ -59,8 +63,8 @@ module.exports = function (fastify, opts) {
           table.text('avatar').nullable()
           // 用户备注
           table.text('note').nullable()
-          // 逗号分割的下一动作序列。
-          table.string('action', 255).nullable()
+          // 逗号分割的下一动作序列(激发状态变化)。
+          table.string('nextAction', 255).nullable()
           // 所属角色,采用数字数组。
           table.specificType('role', 'integer ARRAY').nullable()
           // 所属组数组,采用数字数组。
@@ -72,7 +76,7 @@ module.exports = function (fastify, opts) {
         .createTable(AUDIT, function (table) {
           table.uuid('id', { primaryKey: true }).defaultTo(knex.raw('gen_random_uuid()'))
           // 动作。forget为请求重置，而reset为重置成功。
-          table.enu('action', ['login', 'forget', 'reset']).notNullable()
+          table.enu('action', ['login', 'logout', 'forget', 'reset']).notNullable()
           // 操作日期
           table.boolean('suc').notNullable()
           // 操作日期
@@ -84,7 +88,7 @@ module.exports = function (fastify, opts) {
           // 密码明文，只有操作失败才会保存。成功不保存。
           table.string('password', 255).nullable()
           // session id.只有操作成功才会保存。
-          table.string('sid', 255).nullable()
+          table.string('sid', 255).index().nullable()
           // 远端ip。
           table.specificType('ip', 'INET').notNullable()
           // 远端端口。
