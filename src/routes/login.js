@@ -12,12 +12,23 @@
 'use strict'
 
 module.exports = async function (fastify, opts) {
-  const { soa, error, config, util, _ } = fastify
+  const { soa, error, config, util, _, log } = fastify
   const cfgutil = config.util
   const passport = await soa.get('passport')
   const auditCfg = cfgutil.dget('passport.audit', {})
 
   const loginDev = parseInt(cfgutil.dget('passport.strategies.local.loginDev', '1'))
+  fastify.get('/v1/auth/info',
+    async function (request, reply) {
+      const ret = request.isAuthenticated() ? _.clone(request.user) : {}
+      console.log('request.session.expires=', request.session)
+      if (ret.id && request.session.expires) {
+        ret.expires = request.session.expires
+      }
+      return ret
+    }
+  )
+
   fastify.post('/v1/auth/login',
     {
       schema: {
@@ -43,6 +54,8 @@ module.exports = async function (fastify, opts) {
             id: request.user.id,
             loginDev,
             sessionStore: request.sessionStore
+          }).catch(e => {
+            log.warn('删除登录信息错误:%s', e)
           })
           if (rmCount > 0) {
             const auditJSON = {
@@ -78,17 +91,19 @@ module.exports = async function (fastify, opts) {
         await Audit.query().insert(auditJSON)
       }
       if (request.isAuthenticated()) {
+        const ret = _.clone(request.user)
         if (request.body.keep) {
           // 或者使用reply.setcooke?
           const maxDayAge = cfgutil.has('passport.local.keep') ? parseInt(cfgutil.get('passport.local.keep')) : 365
           const maxAge = maxDayAge * 24 * 60 * 60 * 1000
           request.session.maxAge = maxAge
           request.session.expires = new Date(Date.now() + maxAge)
-          request.session.cookie.expires = request.session.expires
+          ret.expires = request.session.cookie.expires = request.session.expires
+          await request.session.touch()
           // request.session.regenerate()
           // console.log('request.session=', request.session)
         }
-        return request.user
+        return ret
       }
       // return {
       //   ok: false
