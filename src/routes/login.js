@@ -25,6 +25,7 @@ module.exports = async function (fastify, opts) {
       if (ret.id && request.session.expires) {
         ret.expires = request.session.expires
       }
+      console.log('ret=', ret)
       return ret
     }
   )

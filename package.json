@@ -1,5 +1,5 @@
 {
-  "name": "pv-auth",
+  "name": "@masol/auth",
   "version": "0.0.1",
   "description": "prodvest的auth模块。",
   "main": "index.js",
@@ -11,10 +11,10 @@
     "url": "https://gitlab.wware.org/pub/pvauth.git"
   },
   "keywords": [
-    "soa"
+    "auth"
   ],
   "author": "lizhutang",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
     "fastify-plugin": "^4.2.1"
   },

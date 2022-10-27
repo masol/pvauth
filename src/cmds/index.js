@@ -13,10 +13,10 @@ module.exports.run = async function (fastify, opts = {}) {
   const cmd = fastify.runcmd.cmd
   switch (cmd) {
     case 'migrate':
-    case 'init': // 初始化admin用户。
+    case 'user': // 初始化admin用户。
       await require('./migrate').run(fastify, opts)
-      if (cmd === 'init') {
-        await require('./init').run(fastify, opts)
+      if (cmd === 'user') {
+        await require('./user').run(fastify, opts)
       }
       break
     case 'passwd': // 设置admin用户的密码。
